@@ -3,9 +3,9 @@ from django.shortcuts import render
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Compaign, NewShop
+from .models import Shop,Campaign
 from csvapp.seralizers import FileUploadSerializer
-from csvapp.seralizers import SaveFileSerializer
+from csvapp.seralizers import ShopSerializer
 import io, csv, pandas as pd
 from rest_framework.views import APIView
 import time
@@ -22,8 +22,10 @@ class UploadFileView(generics.CreateAPIView):
         seralizer.is_valid(raise_exception=True)
         file=seralizer.validated_data['file']
         reader=pd.read_csv(file)
-        list=[]
+        #here we store all data of csv in the form of dictionary  in csv_data list where action=SESSION_INIT
+        csv_data=[]
         for index,row in reader.iterrows():
+            #here all data comes from csv and added to shop_data dictionary where action=SESSION_INIT
             shop_data={}
             
             if row['action']=='SESSION_INIT':            
@@ -37,23 +39,26 @@ class UploadFileView(generics.CreateAPIView):
                     shop_data['aff_campaign']=row['aff_campaign']
                     shop_data['aff_content']=row['aff_content']
                     shop_data['parent_org']=row['parent_org']
+                    #here all data store in shop_data dictionary and then this dictionary is store in csv_data list
                     list.append(shop_data)
-        # df=pd.DataFrame(list)
-        # mydata=df.drop_duplicates()
-        # print(mydata)
-        
-        rem_list=[]
-        for i in range(len(list)):
-            if list[i] not in list[i+1:]:
-                rem_list.append(list[i])
 
-        for data in rem_list:
-            mydata=NewShop(action=data['action'],publisher_id=data['publisher_id'],timestamp=data['time_stamp'],shopper_id=data['shopper_id'])
-            compaign_data=Compaign(campaign_id=data['campaign_id'],aff_medium=data['aff_medium'],
+        
+        remove_duplicate=[]
+        #data comes from list and check every record for  duplicate of shopper_id and if shopper_id is duplicate in list then it is not add
+        #otherwise it is add into remove_duplicate list
+        for data in range(len(list)):
+            if csv_data[data] not in csv_data[data+1:]:
+                remove_duplicate.append(remove_duplicate[data])
+        
+        #here data from remove_duplicate list means action,publisher_id,timestamp,shopper_id added to Shop Tabel
+        #And campaign_id,aff_medium,aff_term,aff_campaign,aff_content,parent_org added to Campaign Model
+        for data in remove_duplicate:
+            shop_data=Shop(action=data['action'],publisher_id=data['publisher_id'],timestamp=data['time_stamp'],shopper_id=data['shopper_id'])
+            campaign_data=Campaign(campaign_id=data['campaign_id'],aff_medium=data['aff_medium'],
             aff_term=data['aff_term'],aff_campaign=data['aff_campaign'],
             aff_content=data['aff_content'],parent_org=data['parent_org'])
-            mydata.save()
-            compaign_data.save()
+            shop_data.save()
+            campaign_data.save()
         end=time.time() 
 
         return Response({"status": "success","response_time":end-start},
@@ -65,11 +70,12 @@ class UploadFileView(generics.CreateAPIView):
 class GetData(APIView):
 
     def get(self, request, format=None):
-        data = NewShop.objects.all()
-      
-        newshop_serializer = SaveFileSerializer(data, many=True, context={'request':request})
+        # Here we get all the data from shop table and display to end user as response
+        data = Shop.objects.all()
+        #Here we use ShopSerializer for serialize data from shop table and send serialize data to end user. 
+        shop_serializer = ShopSerializer(data, many=True, context={'request':request})
         data     =  {
-            'data': newshop_serializer.data
+            'data': shop_serializer.data
         }
         return Response(data, status= status.HTTP_200_OK)
 
