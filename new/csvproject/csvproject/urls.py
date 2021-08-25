@@ -21,5 +21,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls')),
     path('upload/',UploadFileView.as_view(),name='upload'),
-    path('filter_data/',Data.as_view(),name='filter_data')
+    path('get_data/',GetData.as_view(),name='filter_data')
 ]
