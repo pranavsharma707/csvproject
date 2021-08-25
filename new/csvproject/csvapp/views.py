@@ -24,7 +24,7 @@ class UploadFileView(generics.CreateAPIView):
         reader=pd.read_csv(file)
         #here we store all data of csv in the form of dictionary  in csv_data list where action=SESSION_INIT
         csv_data=[]
-        for index,row in reader.iterrows():
+        for row in reader.iterrows():
             #here all data comes from csv and added to shop_data dictionary where action=SESSION_INIT
             shop_data={}
             
@@ -40,7 +40,7 @@ class UploadFileView(generics.CreateAPIView):
                     shop_data['aff_content']=row['aff_content']
                     shop_data['parent_org']=row['parent_org']
                     #here all data store in shop_data dictionary and then this dictionary is store in csv_data list
-                    list.append(shop_data)
+                    csv_data.append(shop_data)
 
         
         remove_duplicate=[]
